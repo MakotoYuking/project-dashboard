@@ -63,16 +63,63 @@ export const deleteProject = async (id: string) => {
   await deleteDoc(projectRef);
 };
 
-// Real-time listener
-export const subscribeToProjects = (callback: (projects: Project[]) => void, errorCallback?: (error: Error) => void) => {
+// Real-time listener with change detection
+export const subscribeToProjects = (callback: (projects: Project[]) => void, errorCallback?: (error: Error) => void, changeCallback?: (changeType: string, data: any) => void) => {
   const q = query(projectsCollection, orderBy("createdAt", "desc"));
   return onSnapshot(q, 
     (querySnapshot) => {
-      const projects = querySnapshot.docs.map(doc => ({
+      const projects = querySnapshot.docChanges().map((change) => {
+        const project = {
+          id: change.doc.id,
+          ...change.doc.data()
+        } as Project;
+        
+        // Notify about specific changes
+        if (changeCallback) {
+          switch (change.type) {
+            case 'added':
+              changeCallback('added', project);
+              break;
+            case 'modified':
+              changeCallback('modified', project);
+              break;
+            case 'removed':
+              changeCallback('removed', project);
+              break;
+          }
+        }
+        
+        return project;
+      });
+      
+      // Get all projects for full update
+      const allProjects = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Project[];
-      callback(projects);
+      
+      callback(allProjects);
+    },
+    (error) => {
+      if (errorCallback) {
+        errorCallback(error);
+      }
+    }
+  );
+};
+
+// Real-time listener for single project
+export const subscribeToProject = (projectId: string, callback: (project: Project) => void, errorCallback?: (error: Error) => void) => {
+  const projectRef = doc(db, "projects", projectId);
+  return onSnapshot(projectRef, 
+    (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const project = {
+          id: docSnapshot.id,
+          ...docSnapshot.data()
+        } as Project;
+        callback(project);
+      }
     },
     (error) => {
       if (errorCallback) {

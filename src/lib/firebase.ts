@@ -4,13 +4,13 @@ import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyB9KHKGVw2abj_tkAa_kiE1pwboZdJQwqo",
-  authDomain: "talpoc-bb7b2.firebaseapp.com",
-  projectId: "talpoc-bb7b2",
-  storageBucket: "talpoc-bb7b2.firebasestorage.app",
-  messagingSenderId: "943737959780",
-  appId: "1:943737959780:web:808d2aa17e35f43aa1f671"
-}
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB9KHKGVw2abj_tkAa_kiE1pwboZdJQwqo",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "talpoc-bb7b2.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "talpoc-bb7b2",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "talpoc-bb7b2.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "943737959780",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:943737959780:web:808d2aa17e35f43aa1f671"
+};
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 

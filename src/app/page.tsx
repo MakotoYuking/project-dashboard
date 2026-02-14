@@ -5,6 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { addProject as addProjectToFirebase, updateProject, deleteProject as deleteProjectFromFirebase } from "@/lib/firestore";
+import { FirebaseTest } from "@/components/FirebaseTest";
+import { RealtimeIndicator } from "@/components/RealtimeIndicator";
+import { useFirebase } from "@/components/FirebaseProvider";
 
 interface Note {
   text: string;
@@ -13,7 +17,7 @@ interface Note {
 }
 
 interface Project {
-  id: number;
+  id?: string;
   name: string;
   location: string;
   pm: string;
@@ -21,11 +25,12 @@ interface Project {
   picRole: string;
   due: string;
   notes: Note[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const initialProjects: Project[] = [
   {
-    id: 1,
     name: "Thrisna Private Lounge",
     location: "Jakarta",
     pm: "Bapak Andi",
@@ -74,7 +79,7 @@ function hasLateTask(project: Project): boolean {
 }
 
 export default function DashboardDemo() {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const { projects, loading, error } = useFirebase();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -94,13 +99,17 @@ export default function DashboardDemo() {
   function handleAddProject() {
     if (!form.name) return;
 
-    const newProject: Project = {
-      id: Date.now(),
-      ...form,
+    const newProject = {
+      name: form.name,
+      location: form.location,
+      pm: form.pm,
+      due: form.due,
+      pic: form.pic,
+      picRole: form.picRole,
       notes: [],
     };
 
-    setProjects((prev) => [...prev, newProject]);
+    addProjectToFirebase(newProject);
     setShowAddForm(false);
     setForm({ name: "", location: "", pm: "", due: "", pic: "", picRole: "" });
   }
@@ -108,12 +117,12 @@ export default function DashboardDemo() {
   function addTask() {
     if (!newTask.trim() || !selectedProject) return;
 
-    const updatedProject: Project = {
+    const updatedProject = {
       ...selectedProject,
       notes: [...selectedProject.notes, { text: newTask, status: taskStatus, due: taskDue }],
     };
 
-    updateProject(updatedProject);
+    updateProject(selectedProject.id!, updatedProject);
     setNewTask("");
     setTaskDue("");
   }
@@ -122,23 +131,43 @@ export default function DashboardDemo() {
     if (!selectedProject) return;
     const updatedNotes = [...selectedProject.notes];
     updatedNotes[index].status = value;
-    updateProject({ ...selectedProject, notes: updatedNotes });
+    updateProject(selectedProject.id!, { ...selectedProject, notes: updatedNotes });
   }
 
   function deleteTask(index: number) {
     if (!selectedProject) return;
     const updatedNotes = selectedProject.notes.filter((_, i) => i !== index);
-    updateProject({ ...selectedProject, notes: updatedNotes });
+    updateProject(selectedProject.id!, { ...selectedProject, notes: updatedNotes });
   }
 
-  function updateProject(updatedProject: Project) {
-    setSelectedProject(updatedProject);
-    setProjects((prev) => prev.map((p) => (p.id === updatedProject.id ? updatedProject : p)));
-  }
-
-  function deleteProject(id: number) {
-    setProjects((prev) => prev.filter((p) => p.id !== id));
+  function deleteProject(id: string) {
+    if (!id) return;
+    deleteProjectFromFirebase(id);
     if (selectedProject?.id === id) setSelectedProject(null);
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading from Firebase...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-lg mb-4">Error loading data: {error}</p>
+          <Button onClick={() => window.location.reload()} className="bg-red-700 hover:bg-red-800 text-white">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -147,11 +176,16 @@ export default function DashboardDemo() {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Project Dashboard</h1>
           <p className="text-slate-300 text-lg">Manage your projects and tasks efficiently</p>
+          <div className="flex justify-center items-center gap-4 mt-4">
+            <RealtimeIndicator />
+          </div>
         </motion.div>
       </header>
       
       {!selectedProject && (
         <>
+          <FirebaseTest />
+          
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ staggerChildren: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <motion.div whileHover={{ scale: 1.02, y: -2 }} transition={{ type: "spring", stiffness: 300 }}>
               <Card className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
@@ -287,7 +321,7 @@ export default function DashboardDemo() {
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          onClick={()=>deleteProject(project.id)}
+                          onClick={()=>deleteProject(project.id!)}
                           className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"
                         >
                           🗑️
