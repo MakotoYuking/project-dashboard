@@ -91,18 +91,6 @@ export default function DashboardDemo() {
     picRole: "",
   });
 
-  const [newProjectTasks, setNewProjectTasks] = useState<Array<{
-    text: string;
-    status: "done" | "progress" | "problem";
-    due: string;
-  }>>([]);
-
-  const [newTaskForm, setNewTaskForm] = useState({
-    text: "",
-    status: "progress" as "done" | "progress" | "problem",
-    due: "",
-  });
-
   const [newTask, setNewTask] = useState("");
   const [taskStatus, setTaskStatus] = useState<"done" | "progress" | "problem">("progress");
   const [taskDue, setTaskDue] = useState("");
@@ -117,29 +105,12 @@ export default function DashboardDemo() {
       due: form.due,
       pic: form.pic,
       picRole: form.picRole,
-      notes: newProjectTasks,
+      notes: [],
     };
 
     addProjectToFirebase(newProject);
     setShowAddForm(false);
     setForm({ name: "", location: "", pm: "", due: "", pic: "", picRole: "" });
-    setNewProjectTasks([]);
-    setNewTaskForm({ text: "", status: "progress", due: "" });
-  }
-
-  function addTaskToNewProject() {
-    if (!newTaskForm.text.trim()) return;
-
-    setNewProjectTasks([...newProjectTasks, { 
-      text: newTaskForm.text, 
-      status: newTaskForm.status, 
-      due: newTaskForm.due 
-    }]);
-    setNewTaskForm({ text: "", status: "progress", due: "" });
-  }
-
-  function removeTaskFromNewProject(index: number) {
-    setNewProjectTasks(newProjectTasks.filter((_, i) => i !== index));
   }
 
   function addTask() {
@@ -212,6 +183,7 @@ export default function DashboardDemo() {
       
       {!selectedProject && (
         <>
+         
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ staggerChildren: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <motion.div whileHover={{ scale: 1.02, y: -2 }} transition={{ type: "spring", stiffness: 300 }}>
               <Card className="bg-slate-800/90 backdrop-blur-sm border border-slate-700 shadow-xl hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
@@ -286,102 +258,20 @@ export default function DashboardDemo() {
                     initial={{ opacity: 0, height: 0 }} 
                     animate={{ opacity: 1, height: "auto" }} 
                     exit={{ opacity: 0, height: 0 }}
-                    className="space-y-6"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-gradient-to-r from-slate-700/50 to-slate-600/50 rounded-xl border border-slate-600"
                   >
-                    {/* Project Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6 bg-gradient-to-r from-slate-700/50 to-slate-600/50 rounded-xl border border-slate-600">
-                      <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="Project Name" value={form.name} onChange={(e)=>setForm({...form,name:e.target.value})}/>
-                      <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="Location" value={form.location} onChange={(e)=>setForm({...form,location:e.target.value})}/>
-                      <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="Project Manager" value={form.pm} onChange={(e)=>setForm({...form,pm:e.target.value})}/>
-                      <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="Due Date" value={form.due} onChange={(e)=>setForm({...form,due:e.target.value})}/>
-                      <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="PIC" value={form.pic} onChange={(e)=>setForm({...form,pic:e.target.value})}/>
-                      <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="PIC Role" value={form.picRole} onChange={(e)=>setForm({...form,picRole:e.target.value})}/>
-                    </div>
-
-                    {/* Tasks Section */}
-                    <div className="p-6 bg-gradient-to-r from-slate-700/30 to-slate-600/30 rounded-xl border border-slate-600">
-                      <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <span className="w-6 h-6 bg-blue-500/20 rounded-lg flex items-center justify-center border border-blue-500/30">
-                          <span className="text-blue-400 text-sm">📋</span>
-                        </span>
-                        Initial Tasks (Optional)
-                      </h4>
-                      
-                      {/* Add Task Form */}
-                      <div className="space-y-4 mb-4">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                          <input 
-                            className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" 
-                            placeholder="Task description" 
-                            value={newTaskForm.text}
-                            onChange={(e)=>setNewTaskForm({...newTaskForm,text:e.target.value})}
-                            onKeyPress={(e)=>e.key === 'Enter' && addTaskToNewProject()}
-                          />
-                          <select 
-                            className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" 
-                            value={newTaskForm.status}
-                            onChange={(e)=>setNewTaskForm({...newTaskForm,status:e.target.value as "done" | "progress" | "problem"})}
-                          >
-                            <option value="progress">Progress</option>
-                            <option value="done">Done</option>
-                            <option value="problem">Problem</option>
-                          </select>
-                          <input 
-                            className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" 
-                            placeholder="Task due date" 
-                            value={newTaskForm.due}
-                            onChange={(e)=>setNewTaskForm({...newTaskForm,due:e.target.value})}
-                          />
-                          <Button 
-                            onClick={addTaskToNewProject}
-                            className="bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 h-12 rounded-xl font-semibold"
-                          >
-                            + Add Task
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Tasks List */}
-                      {newProjectTasks.length > 0 && (
-                        <div className="space-y-2">
-                          <h5 className="text-sm font-medium text-slate-300">Tasks to be created ({newProjectTasks.length})</h5>
-                          {newProjectTasks.map((task, index) => (
-                            <motion.div 
-                              key={index}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg border border-slate-600"
-                            >
-                              <div className="flex items-center gap-3">
-                                <TaskBadge status={task.status} />
-                                <div>
-                                  <p className="text-white font-medium">{task.text}</p>
-                                  <p className="text-slate-400 text-sm">Due: {task.due}</p>
-                                </div>
-                              </div>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                onClick={()=>removeTaskFromNewProject(index)}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200"
-                              >
-                                🗑️
-                              </Button>
-                            </motion.div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Save Button */}
-                    <div className="flex justify-end">
-                      <Button 
-                        onClick={handleAddProject}
-                        className="bg-red-700 hover:bg-red-800 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 h-12 rounded-xl font-semibold"
-                      >
-                        Create Project with {newProjectTasks.length} task{newProjectTasks.length !== 1 ? 's' : ''}
-                      </Button>
-                    </div>
+                    <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="Project Name" value={form.name} onChange={(e)=>setForm({...form,name:e.target.value})}/>
+                    <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="Location" value={form.location} onChange={(e)=>setForm({...form,location:e.target.value})}/>
+                    <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="Project Manager" value={form.pm} onChange={(e)=>setForm({...form,pm:e.target.value})}/>
+                    <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="Due Date" value={form.due} onChange={(e)=>setForm({...form,due:e.target.value})}/>
+                    <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="PIC" value={form.pic} onChange={(e)=>setForm({...form,pic:e.target.value})}/>
+                    <input className="flex h-12 w-full rounded-xl border border-slate-600 bg-slate-700/80 backdrop-blur-sm px-4 py-3 text-sm font-medium placeholder:text-slate-400 text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all duration-200" placeholder="PIC Role" value={form.picRole} onChange={(e)=>setForm({...form,picRole:e.target.value})}/>
+                    <Button 
+                      onClick={handleAddProject}
+                      className="bg-red-700 hover:bg-red-800 text-white border-0 shadow-lg hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 h-12 rounded-xl font-semibold"
+                    >
+                      Save Project
+                    </Button>
                   </motion.div>
                 )}
 
