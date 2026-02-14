@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { addProject as addProjectToFirebase, updateProject, deleteProject as deleteProjectFromFirebase } from "@/lib/firestore";
-import { FirebaseTest } from "@/components/FirebaseTest";
 import { RealtimeIndicator } from "@/components/RealtimeIndicator";
 import { useFirebase } from "@/components/FirebaseProvider";
 
